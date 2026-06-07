@@ -4,13 +4,14 @@ import duckdb
 from .config import get_db_path
 
 
-def _init_tables(db_path: str = None) -> duckdb.DuckDBPyConnection:
+def open_db(db_path: str = None) -> duckdb.DuckDBPyConnection:
+    """Open (or create) the local cache database. Returns a DuckDB connection."""
     if db_path is None:
         db_path = str(get_db_path())
     conn = duckdb.connect(db_path)
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS option_candles (
+        CREATE TABLE IF NOT EXISTS candles (
             timestamp       TIMESTAMPTZ NOT NULL,
             symbol          VARCHAR     NOT NULL,
             interval        VARCHAR     NOT NULL,
@@ -59,8 +60,8 @@ def _init_tables(db_path: str = None) -> duckdb.DuckDBPyConnection:
     )
     conn.execute(
         """
-        CREATE INDEX IF NOT EXISTS idx_option_candles_symbol_interval
-            ON option_candles (symbol, interval);
+        CREATE INDEX IF NOT EXISTS idx_candles_symbol_interval
+            ON candles (symbol, interval);
         CREATE INDEX IF NOT EXISTS idx_option_snapshots_underlying
             ON option_snapshots (underlying_symbol, collected_at);
         CREATE INDEX IF NOT EXISTS idx_symbol_coverage_symbol
@@ -103,7 +104,7 @@ def upsert_coverage(
     row = conn.execute(
         """
         SELECT MIN(timestamp), MAX(timestamp)
-        FROM option_candles
+        FROM candles
         WHERE symbol = ? AND interval = ?
         """,
         [symbol, interval],
@@ -139,7 +140,7 @@ def query_candles(
     return conn.execute(
         """
         SELECT timestamp, symbol, interval, open, high, low, close, volume, vwap, transactions
-        FROM option_candles
+        FROM candles
         WHERE symbol = ? AND interval = ?
           AND timestamp >= ? AND timestamp <= ?
         ORDER BY timestamp ASC
@@ -192,6 +193,9 @@ CANDLE_COLS = [
     "volume", "vwap", "transactions",
 ]
 
+# Keep _init_tables as an alias for backwards-compat with existing scripts.
+_init_tables = open_db
+
 SNAPSHOT_COLS = [
     "collected_at", "symbol", "underlying_symbol", "expiry", "strike",
     "option_type", "bid", "ask", "last_price", "volume", "open_interest",
@@ -200,7 +204,7 @@ SNAPSHOT_COLS = [
 
 
 def insert_candles(df: pl.DataFrame, conn: duckdb.DuckDBPyConnection):
-    insert_data(df, CANDLE_COLS, "option_candles", conn, pk_cols=["timestamp", "symbol", "interval"])
+    insert_data(df, CANDLE_COLS, "candles", conn, pk_cols=["timestamp", "symbol", "interval"])
 
 
 def insert_snapshots(df: pl.DataFrame, conn: duckdb.DuckDBPyConnection):

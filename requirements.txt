@@ -3,3 +3,4 @@ polars
 duckdb
 pyarrow
 python-dotenv
+py_vollib

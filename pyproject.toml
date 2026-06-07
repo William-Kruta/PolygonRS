@@ -1,13 +1,26 @@
 [project]
 name = "polygonrs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Polygon.io API wrapper for options and equities with local DuckDB caching"
 readme = "README.md"
 requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
 dependencies = [
     "duckdb>=1.5.3",
     "polars>=1.41.2",
     "polygon",
+    "py-vollib>=1.0.12",
     "pyarrow>=24.0.0",
     "pytz>=2026.2",
+]
+
+[dependency-groups]
+dev = [
+    "twine>=6.2.0",
 ]
